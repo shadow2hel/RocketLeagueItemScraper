@@ -1,6 +1,7 @@
 const request = require('request');
 const cheerio = require('cheerio');
 const fs = require('fs');
+let trades = [];
 let Items = {};
 
 function writeToJSON(){
@@ -18,58 +19,61 @@ function getAllItems(){
             const $ = cheerio.load(html);
 
             $('#filterItem').find('option').each(function(i, item){
-                console.log($(item).text() + ": " + $(item).attr('value'))
                 Items[$(item).text()] = $(item).attr('value');
-            })
+            });
             writeToJSON();
         }
     });
 }
 
-function getRequestedItem(itemID){
+function getTradesForItem(itemID){
     request('https://rocket-league.com/trading?filterItem=' + itemID + '&filterCertification=0&filterPaint=0&filterPlatform=0', null, function(error, response, html){
         if (!error && response.statusCode == 200) {
             const $ = cheerio.load(html);
-            let results = [];
 
 
             $('div.rlg-trade-display-items').each((i, item) => {
                 let objectItems = {
                     youritems: [],
                     theiritems: []
+                };
+
+                function getItems(whichitems){
+                    let objectItems = []
+
+                    $(item).find('#rlg-' + whichitems + 'items').each((j, item2) => {
+                        $(item2).find('.rlg-trade-display-item').each((i, item3) => {
+                            if($(item3).find('.rlg-trade-display-item-paint').length > 0){
+                                objectItems[i] = $(item3).find('h2').first().text() + ' (' + $(item3).find('.rlg-trade-display-item-paint').first().attr('data-name') + ")";
+                            } else {
+                                objectItems[i] = $(item3).find('h2').first().text();
+                            }
+
+                            console.log($(item3).find('h2').first().text());
+                        });
+                    });
+
+                    return objectItems;
                 }
-                $(item).find('#rlg-youritems').each((j, item2) => {
-                    $(item2).find('.rlg-trade-display-item').each((i, item3) => {
-                        objectItems.youritems.push($(item3).find('h2').first().text());
-                        console.log($(item3).find('h2').first().text());
-                    });
-                });
-                $(item).find('#rlg-theiritems').first().each((j, item2) => {
-                    $(item2).find('.rlg-trade-display-item').each((i, item3) => {
-                        objectItems.theiritems.push($(item3).find('h2').first().text());
-                        console.log($(item3).find('h2').first().text());
-                    });
-                });
-                results.push(objectItems);
+
+                objectItems.youritems = getItems('your');
+                objectItems.theiritems = getItems('their');
+                trades.push(objectItems);
             });
 
-            console.log(results[2].youritems.toString())
-
-            for(let i = 0; i < results.length; i++){
+            for(let i = 0; i < trades.length; i++){
                 console.log("Trade " + i + "\n")
                 console.log("\tYour items: \n")
-                for(let j = 0; j < results[i].youritems.length; j++){
-                    console.log("\t\t" + results[i].youritems[j] + "\n");
+                for(let j = 0; j < trades[i].youritems.length; j++){
+                    console.log("\t\t" + trades[i].youritems[j] + "\n");
                 }
                 console.log("\n\tTheir items: \n");
-                for(let j = 0; j < results[i].theiritems.length; j++){
-                    console.log("\t\t" + results[i].theiritems[j] + "\n");
+                for(let j = 0; j < trades[i].theiritems.length; j++){
+                    console.log("\t\t" + trades[i].theiritems[j] + "\n");
                 }
             }
-
-            //console.log($('body > main > div > div > div > div:nth-child(5) > div:nth-child(2) > div.rlg-trade-display-items').first().find('#rlg-youritems').first().text());
         }
     })
 }
 
-getRequestedItem(1000);
+getTradesForItem(1000);

@@ -2,7 +2,7 @@
   "name": "RocketLeagueItemScraper",
   "version": "1.0.0",
   "dependencies": {
-    "request": "latest",
-    "cheerio": "latest"
+    "cheerio": "^1.0.0-rc.3",
+    "request": "^2.88.0"
   }
 }
